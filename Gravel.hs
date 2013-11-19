@@ -1,6 +1,7 @@
 module Gravel where
 
-import Text.Parsec (Parsec, (<|>), parse, letter, char, alphaNum, oneOf)
+import Text.Parsec (Parsec, (<|>), parse, letter, char, alphaNum, oneOf,
+                    parserZero)
 import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
 
@@ -101,8 +102,8 @@ tokp = Tok.makeTokenParser $ Tok.LanguageDef {
     Tok.nestedComments = False,
     Tok.identStart = letter <|> char '_',
     Tok.identLetter = alphaNum <|> char '_',
-    Tok.opStart = oneOf "",
-    Tok.opLetter = oneOf "",
+    Tok.opStart = parserZero,
+    Tok.opLetter = parserZero,
     Tok.caseSensitive = True
 }
 

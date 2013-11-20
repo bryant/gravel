@@ -7,13 +7,15 @@ import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
 
 data Statement =
-    VarDecl String (Maybe Expression) |
+    VarDecl String Type (Maybe Expression) |
     Assignment String Expression |
     Return Expression |
     If Expression [Statement] |
     While Expression [Statement] |
     Expr Expression
     deriving Show
+
+type Type = String
 
 data UnaryOp =
     Negate |
@@ -137,5 +139,6 @@ opPrecedence = [
 
 varDecl = do
     name <- Tok.identifier tokp
+    ty <- P.choice $ map (Tok.symbol tokp) ["u32", "i32"]
     val <- P.optionMaybe $ Tok.reservedOp tokp "=" >> expr
-    return $ VarDecl name val
+    return $ VarDecl name ty val

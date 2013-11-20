@@ -21,6 +21,7 @@ data UnaryOp =
     deriving Show
 
 data BinaryOp =
+    AttrSel |
     Exponent |
     Multiply |
     Divide |
@@ -62,7 +63,7 @@ reservedNames_ = words "while return if elif else u32 i32"
 reservedOpNames_ = words $ unary ++ " " ++ binary
     where
     unary = "- ~ not"
-    binary = "** * / % + << >> & ^ | == != >= <= > < and or ="
+    binary = ". ** * / % + << >> & ^ | == != >= <= > < and or ="
 
 tokp = Tok.makeTokenParser $ Tok.LanguageDef {
     Tok.reservedNames = reservedNames_,

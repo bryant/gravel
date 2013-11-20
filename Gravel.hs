@@ -57,41 +57,12 @@ data Expression =
 
 data Ident = Ident String deriving Show
 
-reservedNames_ = [
-    "while",
-    "return",
-    "if",
-    "elif",
-    "else",
-    "u32",
-    "i32"
-    ]
+reservedNames_ = words "while return if elif else u32 i32"
 
-reservedOpNames_ = [
-    "-",
-    "~",
-    "not",
-
-    "**",
-    "*",
-    "/",
-    "%",
-    "+",
-    "<<",
-    ">>",
-    "&",
-    "^",
-    "|",
-    "==",
-    "!=",
-    ">=",
-    "<=",
-    ">",
-    "<",
-    "and",
-    "or",
-    "="
-    ]
+reservedOpNames_ = words $ unary ++ " " ++ binary
+    where
+    unary = "- ~ not"
+    binary = "** * / % + << >> & ^ | == != >= <= > < and or ="
 
 tokp = Tok.makeTokenParser $ Tok.LanguageDef {
     Tok.reservedNames = reservedNames_,

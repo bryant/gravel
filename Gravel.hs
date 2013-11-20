@@ -2,6 +2,7 @@ module Gravel where
 
 import Text.Parsec (Parsec, (<|>), parse, letter, char, alphaNum, oneOf,
                     parserZero, choice, try)
+import qualified Text.Parsec.Expr as PExp
 import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
 
@@ -90,4 +91,46 @@ strLit = StringLiteral <$> Tok.stringLiteral tokp
 var = Variable <$> Tok.identifier tokp
 
 atom :: Parsec String u Expression
-atom = choice $ map try [floatLit, intLit, boolLit, strLit, var]
+atom = choice $ map try [floatLit, intLit, boolLit, strLit, var,
+                         Tok.parens tokp expr]
+
+expr = PExp.buildExpressionParser opPrecedence atom
+
+opPrecedence = [
+    [binOp "**" Exponent PExp.AssocRight],
+
+    [unOp "-" Negate,
+     unOp "~" BitwiseNot],
+
+    [binOp "*" Multiply PExp.AssocLeft,
+     binOp "/" Divide PExp.AssocLeft,
+     binOp "%" Modulo PExp.AssocLeft],
+
+    [binOp "+" Add PExp.AssocLeft,
+     binOp "-" Subtract PExp.AssocLeft],
+
+    [binOp "<<" LeftShift PExp.AssocLeft,
+     binOp ">>" RightShift PExp.AssocLeft],
+
+    [binOp "&" BitwiseAnd PExp.AssocLeft],
+
+    [binOp "^" Xor PExp.AssocLeft],
+
+    [binOp "|" BitwiseOr PExp.AssocLeft],
+
+    [binOp "==" Equal PExp.AssocLeft,
+     binOp "!=" NotEqual PExp.AssocLeft,
+     binOp ">=" GreaterOrEqual PExp.AssocLeft,
+     binOp "<=" LessOrEqual PExp.AssocLeft,
+     binOp ">" Greater PExp.AssocLeft,
+     binOp "<" Less PExp.AssocLeft],
+
+    [unOp "not" Not],
+
+    [binOp "and" And PExp.AssocLeft],
+
+    [binOp "or" Or PExp.AssocLeft]
+    ]
+    where
+    binOp op f = PExp.Infix $ Tok.reservedOp tokp op >> return (BinOp f)
+    unOp op f = PExp.Prefix $ Tok.reservedOp tokp op >> return (UnOp f)

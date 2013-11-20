@@ -1,7 +1,7 @@
 module Gravel where
 
 import Text.Parsec (Parsec, (<|>), parse, letter, char, alphaNum, oneOf,
-                    parserZero)
+                    parserZero, choice, try)
 import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
 
@@ -44,8 +44,8 @@ data BinaryOp =
     deriving Show
 
 data Expression =
-    IntLiteral String |
-    FloatLiteral String |
+    IntLiteral Integer |
+    FloatLiteral Double |
     BoolLiteral Bool |
     StringLiteral String |
     Variable String |
@@ -56,7 +56,7 @@ data Expression =
     FuncCall String [Expression]
     deriving Show
 
-reservedNames_ = words "while return if elif else u32 i32"
+reservedNames_ = words "while return if elif else u32 i32 True False"
 
 reservedOpNames_ = words $ unary ++ " " ++ binary
     where
@@ -77,5 +77,17 @@ tokp = Tok.makeTokenParser $ Tok.LanguageDef {
     Tok.caseSensitive = True
 }
 
-ident :: Parsec String u Ident
-ident = Ident <$> Tok.identifier tokp
+intLit = IntLiteral <$> Tok.natural tokp
+
+floatLit = FloatLiteral <$> Tok.float tokp
+
+boolLit = BoolLiteral <$> bool'
+    where bool' = (Tok.reserved tokp "True" >> return True) <|>
+                  (Tok.reserved tokp "False" >> return False)
+
+strLit = StringLiteral <$> Tok.stringLiteral tokp
+
+var = Variable <$> Tok.identifier tokp
+
+atom :: Parsec String u Expression
+atom = choice $ map try [floatLit, intLit, boolLit, strLit, var]

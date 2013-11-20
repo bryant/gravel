@@ -6,8 +6,8 @@ import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
 
 data Statement =
-    VarDecl Ident Expression |
-    Assignment Ident Expression |
+    VarDecl String Expression |
+    Assignment String Expression |
     Return Expression |
     If Expression [Statement] |
     While Expression [Statement] |
@@ -48,15 +48,13 @@ data Expression =
     FloatLiteral String |
     BoolLiteral Bool |
     StringLiteral String |
-    Variable Ident |
+    Variable String |
     UnOp UnaryOp Expression |
     BinOp BinaryOp Expression Expression |
-    AttributeRef Expression Ident |
+    AttributeRef Expression String |
     Subscript Expression Expression |
-    FuncCall Ident [Expression]
+    FuncCall String [Expression]
     deriving Show
-
-data Ident = Ident String deriving Show
 
 reservedNames_ = words "while return if elif else u32 i32"
 

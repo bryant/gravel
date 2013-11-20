@@ -1,7 +1,7 @@
 module Gravel where
 
-import Text.Parsec (Parsec, (<|>), parse, letter, char, alphaNum, oneOf,
-                    parserZero, choice, try)
+import Text.Parsec ((<|>))
+import qualified Text.Parsec as P
 import qualified Text.Parsec.Expr as PExp
 import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
@@ -71,10 +71,10 @@ tokp = Tok.makeTokenParser $ Tok.LanguageDef {
     Tok.commentStart = "",
     Tok.commentEnd = "",
     Tok.nestedComments = False,
-    Tok.identStart = letter <|> char '_',
-    Tok.identLetter = alphaNum <|> char '_',
-    Tok.opStart = parserZero,
-    Tok.opLetter = parserZero,
+    Tok.identStart = P.letter <|> P.char '_',
+    Tok.identLetter = P.alphaNum <|> P.char '_',
+    Tok.opStart = P.parserZero,
+    Tok.opLetter = P.parserZero,
     Tok.caseSensitive = True
 }
 
@@ -90,9 +90,9 @@ strLit = StringLiteral <$> Tok.stringLiteral tokp
 
 var = Variable <$> Tok.identifier tokp
 
-atom :: Parsec String u Expression
-atom = choice $ map try [floatLit, intLit, boolLit, strLit, var,
-                         Tok.parens tokp expr]
+atom :: P.Parsec String u Expression
+atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, var,
+                             Tok.parens tokp expr]
 
 expr = PExp.buildExpressionParser opPrecedence atom
 

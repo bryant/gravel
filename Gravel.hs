@@ -7,7 +7,7 @@ import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
 
 data Statement =
-    VarDecl String Expression |
+    VarDecl String (Maybe Expression) |
     Assignment String Expression |
     Return Expression |
     If Expression [Statement] |
@@ -88,10 +88,10 @@ boolLit = BoolLiteral <$> bool'
 
 strLit = StringLiteral <$> Tok.stringLiteral tokp
 
-var = Variable <$> Tok.identifier tokp
+varName = Variable <$> Tok.identifier tokp
 
 atom :: P.Parsec String u Expression
-atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, var,
+atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, varName,
                              Tok.parens tokp expr]
 
 expr = PExp.buildExpressionParser opPrecedence atom
@@ -134,3 +134,8 @@ opPrecedence = [
     where
     binOp op f = PExp.Infix $ Tok.reservedOp tokp op >> return (BinOp f)
     unOp op f = PExp.Prefix $ Tok.reservedOp tokp op >> return (UnOp f)
+
+varDecl = do
+    name <- Tok.identifier tokp
+    val <- P.optionMaybe $ Tok.reservedOp tokp "=" >> expr
+    return $ VarDecl name val

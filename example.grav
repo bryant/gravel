@@ -42,6 +42,11 @@ i32 fib_log_n(nth i32):
     fibmatrix [[i32]] = [[1, 1], [1, 0]]
     return mat_exp(fibmatrix, nth)[0][1]
 
+i32 lambda_demo():
+    [1..10].range (i):
+            printf("%d %d\n", i, sum)
+            sum += i
+
 # things of note:
 # - no for loops
 # - no pointers

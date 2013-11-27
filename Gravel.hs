@@ -186,13 +186,9 @@ statementBlock = indented >> baseIndent (P.many1 $ sameIndent >> statement)
 
 funcParam = varDecl' <*> return Nothing
 
-funcDecl = do
-    ty <- typeDecl
-    name <- Tok.identifier tokp
-    params <- parens $ funcParam `P.sepBy` commas
-    colon
-    stmts <- statementBlock
-    return $ FuncDecl ty name params stmts
+funcDecl = FuncDecl <$> typeDecl <*> Tok.identifier tokp <*> params <*>
+           (colon >> statementBlock)
     where
+    params = parens $ funcParam `P.sepBy` commas
     colon = Tok.lexeme tokp $ P.char ':'
     commas = Tok.lexeme tokp $ P.char ','

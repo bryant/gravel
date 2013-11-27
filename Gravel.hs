@@ -1,10 +1,31 @@
 module Gravel where
 
-import Text.Parsec ((<|>))
+import Text.Parsec ((<|>), (<?>))
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Expr as PExp
 import qualified Text.Parsec.Token as Tok
 import Control.Applicative ((<$>), (<*>), (<*))
+import Control.Monad (guard)
+
+type ParserState = P.Column
+
+getIndentation :: P.Parsec s ParserState (P.Column, P.Column)
+getIndentation = do
+    base <- P.getState
+    cur <- P.sourceColumn <$> P.getPosition
+    return (cur, base)
+
+indented :: P.Parsec s ParserState ()
+indented = getIndentation >>= guard . (uncurry (>)) <?> "indentation"
+
+sameIndent :: P.Parsec s ParserState ()
+sameIndent = getIndentation >>= guard . (uncurry (==)) <?> "no indentation"
+
+baseIndent :: P.Parsec s ParserState a -> P.Parsec s ParserState a
+baseIndent p = do
+    (cur, base) <- getIndentation
+    r <- P.putState cur >> p <* P.putState base
+    return r
 
 data Statement =
     VarDecl String Type (Maybe Expression) |
@@ -92,7 +113,7 @@ strLit = StringLiteral <$> Tok.stringLiteral tokp
 
 varName = Variable <$> Tok.identifier tokp
 
-atom :: P.Parsec String u Expression
+atom :: P.Parsec String ParserState Expression
 atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, varName,
                              Tok.parens tokp expr]
 

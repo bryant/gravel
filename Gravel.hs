@@ -29,6 +29,11 @@ baseIndent p = do
 
 type Ident = String
 
+data FuncDecl =
+    ExternFuncDecl Type Ident [VarDecl] |
+    FuncDecl Type Ident [VarDecl] [Statement]
+    deriving Show
+
 data VarDecl = VarDecl Ident (Maybe Type) (Maybe Expression) deriving Show
 
 data Statement =
@@ -167,3 +172,17 @@ typeDecl = P.choice $ map (Tok.symbol tokp) ["u32", "i32"]
 varDecl' = VarDecl <$> Tok.identifier tokp <*> (Just <$> typeDecl)
 
 varDeclStatement = varDecl' <*> (P.optionMaybe $ Tok.reservedOp tokp "=" >> expr)
+
+funcParam = varDecl' <*> return Nothing
+
+funcDecl = do
+    ty <- typeDecl
+    name <- Tok.identifier tokp
+    params <- P.between openParen closingParen $ funcParam `P.sepBy` commas
+    colon
+    return $ FuncDecl ty name params []
+    where
+    openParen = Tok.lexeme tokp $ P.char '('
+    closingParen = Tok.lexeme tokp $ P.char ')'
+    colon = Tok.lexeme tokp $ P.char ':'
+    commas = Tok.lexeme tokp $ P.char ','

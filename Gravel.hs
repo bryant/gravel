@@ -29,6 +29,13 @@ parens p = P.between openParen closingParen p
     openParen = Tok.lexeme tokp $ P.char '('
     closingParen = Tok.lexeme tokp $ P.char ')'
 
+data Module = Module [TopLevelDecl] deriving Show
+
+data TopLevelDecl =
+    TopFuncDecl FuncDecl |
+    TopVarDecl VarDecl
+    deriving Show
+
 type Ident = String
 
 data FuncDecl =
@@ -192,3 +199,10 @@ funcDecl = FuncDecl <$> typeDecl <*> Tok.identifier tokp <*> params <*>
     params = parens $ funcParam `P.sepBy` commas
     colon = Tok.lexeme tokp $ P.char ':'
     commas = Tok.lexeme tokp $ P.char ','
+
+parseTopLevel = P.choice [
+    TopFuncDecl <$> funcDecl,
+    TopVarDecl <$> varDeclStatement
+    ]
+
+parseModule = Module <$> baseIndent (P.many1 $ sameIndent >> parseTopLevel) <* P.eof

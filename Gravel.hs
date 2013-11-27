@@ -33,7 +33,7 @@ data Statement =
     Return Expression |
     If Expression [Statement] |
     While Expression [Statement] |
-    Expr Expression
+    ExprStatement Expression
     deriving Show
 
 type Type = String
@@ -111,10 +111,10 @@ boolLit = BoolLiteral <$> bool'
 
 strLit = StringLiteral <$> Tok.stringLiteral tokp
 
-varName = Variable <$> Tok.identifier tokp
+varExpr = Variable <$> Tok.identifier tokp
 
 atom :: P.Parsec String ParserState Expression
-atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, varName,
+atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, varExpr,
                              Tok.parens tokp expr]
 
 expr = PExp.buildExpressionParser opPrecedence atom

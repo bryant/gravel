@@ -15,17 +15,19 @@ getIndentation = do
     cur <- P.sourceColumn <$> P.getPosition
     return (cur, base)
 
-indented :: P.Parsec s ParserState ()
 indented = getIndentation >>= guard . (uncurry (>)) <?> "indentation"
 
-sameIndent :: P.Parsec s ParserState ()
 sameIndent = getIndentation >>= guard . (uncurry (==)) <?> "no indentation"
 
-baseIndent :: P.Parsec s ParserState a -> P.Parsec s ParserState a
 baseIndent p = do
     (cur, base) <- getIndentation
     r <- P.putState cur >> p <* P.putState base
     return r
+
+parens p = P.between openParen closingParen p
+    where
+    openParen = Tok.lexeme tokp $ P.char '('
+    closingParen = Tok.lexeme tokp $ P.char ')'
 
 type Ident = String
 
@@ -173,23 +175,24 @@ varDecl' = VarDecl <$> Tok.identifier tokp <*> (Just <$> typeDecl)
 
 varDeclStatement = varDecl' <*> P.optionMaybe (Tok.reservedOp tokp "=" >> expr)
 
-funcParam = varDecl' <*> return Nothing
-
-funcDecl = do
-    ty <- typeDecl
-    name <- Tok.identifier tokp
-    params <- P.between openParen closingParen $ funcParam `P.sepBy` commas
-    colon
-    stmts <- P.many1 statement
-    return $ FuncDecl ty name params stmts
-    where
-    openParen = Tok.lexeme tokp $ P.char '('
-    closingParen = Tok.lexeme tokp $ P.char ')'
-    colon = Tok.lexeme tokp $ P.char ':'
-    commas = Tok.lexeme tokp $ P.char ','
-
 statement = P.choice [
     VarDeclStatement <$> varDeclStatement,
     Assignment <$> Tok.identifier tokp <*> expr,
     ExprStatement <$> expr
     ]
+
+statementBlock :: P.Parsec String ParserState [Statement]
+statementBlock = indented >> baseIndent (P.many1 $ sameIndent >> statement)
+
+funcParam = varDecl' <*> return Nothing
+
+funcDecl = do
+    ty <- typeDecl
+    name <- Tok.identifier tokp
+    params <- parens $ funcParam `P.sepBy` commas
+    colon
+    stmts <- statementBlock
+    return $ FuncDecl ty name params stmts
+    where
+    colon = Tok.lexeme tokp $ P.char ':'
+    commas = Tok.lexeme tokp $ P.char ','

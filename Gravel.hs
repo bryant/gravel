@@ -38,7 +38,7 @@ data VarDecl = VarDecl Ident (Maybe Type) (Maybe Expression) deriving Show
 
 data Statement =
     VarDeclStatement VarDecl |
-    Assignment String Expression |
+    Assignment Ident Expression |
     Return (Maybe Expression) |
     If Expression [Statement] |
     While Expression [Statement] |
@@ -180,9 +180,16 @@ funcDecl = do
     name <- Tok.identifier tokp
     params <- P.between openParen closingParen $ funcParam `P.sepBy` commas
     colon
-    return $ FuncDecl ty name params []
+    stmts <- P.many1 statement
+    return $ FuncDecl ty name params stmts
     where
     openParen = Tok.lexeme tokp $ P.char '('
     closingParen = Tok.lexeme tokp $ P.char ')'
     colon = Tok.lexeme tokp $ P.char ':'
     commas = Tok.lexeme tokp $ P.char ','
+
+statement = P.choice [
+    VarDeclStatement <$> varDeclStatement,
+    Assignment <$> Tok.identifier tokp <*> expr,
+    ExprStatement <$> expr
+    ]

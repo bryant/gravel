@@ -27,10 +27,14 @@ baseIndent p = do
     r <- P.putState cur >> p <* P.putState base
     return r
 
+type Ident = String
+
+data VarDecl = VarDecl Ident (Maybe Type) (Maybe Expression) deriving Show
+
 data Statement =
-    VarDecl String Type (Maybe Expression) |
+    VarDeclStatement VarDecl |
     Assignment String Expression |
-    Return Expression |
+    Return (Maybe Expression) |
     If Expression [Statement] |
     While Expression [Statement] |
     ExprStatement Expression
@@ -158,8 +162,8 @@ opPrecedence = [
     binOp op f = PExp.Infix $ Tok.reservedOp tokp op >> return (BinOp f)
     unOp op f = PExp.Prefix $ Tok.reservedOp tokp op >> return (UnOp f)
 
-varDecl = do
-    name <- Tok.identifier tokp
-    ty <- P.choice $ map (Tok.symbol tokp) ["u32", "i32"]
-    val <- P.optionMaybe $ Tok.reservedOp tokp "=" >> expr
-    return $ VarDecl name ty val
+typeDecl = P.choice $ map (Tok.symbol tokp) ["u32", "i32"]
+
+varDecl' = VarDecl <$> Tok.identifier tokp <*> (Just <$> typeDecl)
+
+varDeclStatement = varDecl' <*> (P.optionMaybe $ Tok.reservedOp tokp "=" >> expr)

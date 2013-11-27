@@ -171,7 +171,7 @@ typeDecl = P.choice $ map (Tok.symbol tokp) ["u32", "i32"]
 
 varDecl' = VarDecl <$> Tok.identifier tokp <*> (Just <$> typeDecl)
 
-varDeclStatement = varDecl' <*> (P.optionMaybe $ Tok.reservedOp tokp "=" >> expr)
+varDeclStatement = varDecl' <*> P.optionMaybe (Tok.reservedOp tokp "=" >> expr)
 
 funcParam = varDecl' <*> return Nothing
 

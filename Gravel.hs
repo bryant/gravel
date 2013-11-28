@@ -207,3 +207,5 @@ parseTopLevel = P.choice [
 
 parseModule = Module <$> (Tok.whiteSpace tokp >> baseIndent (P.many1 topLevels)) <* P.eof
     where topLevels = sameIndent >> parseTopLevel
+
+testParse = P.runParser parseModule 0 ""

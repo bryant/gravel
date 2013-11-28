@@ -205,4 +205,5 @@ parseTopLevel = P.choice [
     TopVarDecl <$> varDeclStatement
     ]
 
-parseModule = Module <$> baseIndent (P.many1 $ sameIndent >> parseTopLevel) <* P.eof
+parseModule = Module <$> (Tok.whiteSpace tokp >> baseIndent (P.many1 topLevels)) <* P.eof
+    where topLevels = sameIndent >> parseTopLevel

@@ -95,7 +95,7 @@ data Expression =
     BinOp BinaryOp Expression Expression |
     AttributeRef Expression String |
     Subscript Expression Expression |
-    FuncCall String [Expression]
+    FuncCall Ident [Expression]
     deriving Show
 
 reservedNames_ = words "while return if elif else u32 i32 True False"

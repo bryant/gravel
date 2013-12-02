@@ -24,11 +24,6 @@ baseIndent p = do
     r <- P.putState cur >> p <* P.putState base
     return r
 
-parens p = P.between openParen closingParen p
-    where
-    openParen = Tok.lexeme tokp $ P.char '('
-    closingParen = Tok.lexeme tokp $ P.char ')'
-
 data Module = Module [TopLevelDecl] deriving Show
 
 data TopLevelDecl =
@@ -197,7 +192,7 @@ funcParam = varDecl' <*> return Nothing
 funcDecl = FuncDecl <$> typeDecl <*> Tok.identifier tokp <*> params <*>
            (colon >> statementBlock)
     where
-    params = parens $ funcParam `P.sepBy` commas
+    params = Tok.parens tokp $ funcParam `P.sepBy` commas
     colon = Tok.lexeme tokp $ P.char ':'
     commas = Tok.lexeme tokp $ P.char ','
 

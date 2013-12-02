@@ -130,7 +130,7 @@ atom :: P.Parsec String ParserState Expression
 atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, varExpr,
                              Tok.parens tokp expr]
 
-expr = PExp.buildExpressionParser opPrecedence atom
+expr = P.try funcCallExpr <|> PExp.buildExpressionParser opPrecedence atom
 
 opPrecedence = [
     [binOp "**" Exponent PExp.AssocRight],
@@ -187,14 +187,17 @@ statement = P.choice $ map P.try [
 statementBlock :: P.Parsec String ParserState [Statement]
 statementBlock = indented >> baseIndent (P.many1 $ sameIndent >> statement)
 
-funcParam = varDecl' <*> return Nothing
+commas = Tok.lexeme tokp $ P.char ','
 
-funcDecl = FuncDecl <$> typeDecl <*> Tok.identifier tokp <*> params <*>
+funcDecl = FuncDecl <$> typeDecl <*> Tok.identifier tokp <*> funcParams <*>
            (colon >> statementBlock)
     where
-    params = Tok.parens tokp $ funcParam `P.sepBy` commas
     colon = Tok.lexeme tokp $ P.char ':'
-    commas = Tok.lexeme tokp $ P.char ','
+    funcParams = Tok.parens tokp $ funcParam `P.sepBy` commas
+    funcParam = varDecl' <*> return Nothing
+
+funcCallExpr = FuncCall <$> Tok.identifier tokp <*> funcArgs
+    where funcArgs = Tok.parens tokp $ expr `P.sepBy` commas
 
 parseTopLevel = P.choice [
     TopFuncDecl <$> funcDecl,

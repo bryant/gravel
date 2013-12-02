@@ -179,7 +179,7 @@ varDeclStatement = varDecl' <*> P.optionMaybe (Tok.reservedOp tokp "=" >> expr)
 
 statement = P.choice [
     VarDeclStatement <$> varDeclStatement,
-    Assignment <$> Tok.identifier tokp <*> expr,
+    Assignment <$> Tok.identifier tokp <*> (P.char '=' >> expr),
     ExprStatement <$> expr,
     Return <$> P.optionMaybe (Tok.reserved tokp "return" >> expr)
     ]

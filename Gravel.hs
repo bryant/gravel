@@ -177,7 +177,7 @@ varDecl' = VarDecl <$> Tok.identifier tokp <*> (Just <$> typeDecl)
 
 varDeclStatement = varDecl' <*> P.optionMaybe (Tok.reservedOp tokp "=" >> expr)
 
-statement = P.choice [
+statement = P.choice $ map P.try [
     VarDeclStatement <$> varDeclStatement,
     Assignment <$> Tok.identifier tokp <*> (P.char '=' >> expr),
     ExprStatement <$> expr,

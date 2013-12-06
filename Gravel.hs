@@ -185,14 +185,15 @@ statement = P.choice $ map P.try [
     ]
 
 statementBlock :: P.Parsec String ParserState [Statement]
-statementBlock = indented >> baseIndent (P.many1 $ sameIndent >> statement)
+statementBlock = colon >> indented >> baseIndent (P.many1 $ sameIndent >>
+                                                  statement)
+    where colon = Tok.lexeme tokp $ P.char ':'
 
 commas = Tok.lexeme tokp $ P.char ','
 
 funcDecl = FuncDecl <$> typeDecl <*> Tok.identifier tokp <*> funcParams <*>
-           (colon >> statementBlock)
+           statementBlock
     where
-    colon = Tok.lexeme tokp $ P.char ':'
     funcParams = Tok.parens tokp $ funcParam `P.sepBy` commas
     funcParam = varDecl' <*> return Nothing
 

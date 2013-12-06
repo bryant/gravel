@@ -181,7 +181,7 @@ statement = P.choice $ map P.try [
     VarDeclStatement <$> varDeclStatement,
     Assignment <$> Tok.identifier tokp <*> (P.char '=' >> expr),
     ExprStatement <$> expr,
-    Return <$> P.optionMaybe (Tok.reserved tokp "return" >> expr)
+    Return <$> (Tok.reserved tokp "return" >> P.optionMaybe expr),
     ]
 
 statementBlock :: P.Parsec String ParserState [Statement]

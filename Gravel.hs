@@ -199,7 +199,7 @@ funcDecl = FuncDecl <$> typeDecl <*> Tok.identifier tokp <*> funcParams <*>
 funcCallExpr = FuncCall <$> Tok.identifier tokp <*> funcArgs
     where funcArgs = Tok.parens tokp $ expr `P.sepBy` commas
 
-parseTopLevel = P.choice [
+parseTopLevel = P.choice $ map P.try [
     TopFuncDecl <$> funcDecl,
     TopVarDecl <$> varDeclStatement
     ]

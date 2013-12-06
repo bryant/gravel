@@ -127,10 +127,10 @@ strLit = StringLiteral <$> Tok.stringLiteral tokp
 varExpr = Variable <$> Tok.identifier tokp
 
 atom :: P.Parsec String ParserState Expression
-atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, varExpr,
-                             Tok.parens tokp expr]
+atom = P.choice $ map P.try [floatLit, intLit, boolLit, strLit, funcCallExpr,
+                             varExpr, Tok.parens tokp expr]
 
-expr = P.try funcCallExpr <|> PExp.buildExpressionParser opPrecedence atom
+expr = PExp.buildExpressionParser opPrecedence atom
 
 opPrecedence = [
     [binOp "**" Exponent PExp.AssocRight],

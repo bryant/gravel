@@ -182,6 +182,8 @@ statement = P.choice $ map P.try [
     Assignment <$> Tok.identifier tokp <*> (P.char '=' >> expr),
     ExprStatement <$> expr,
     Return <$> (Tok.reserved tokp "return" >> P.optionMaybe expr),
+    If <$> (Tok.reserved tokp "if" >> expr) <*> statementBlock,
+    While <$> (Tok.reserved tokp "while" >> expr) <*> statementBlock
     ]
 
 statementBlock :: P.Parsec String ParserState [Statement]

@@ -85,7 +85,7 @@ data Expression =
     FloatLiteral Double |
     BoolLiteral Bool |
     StringLiteral String |
-    Variable String |
+    Variable Ident |
     UnOp UnaryOp Expression |
     BinOp BinaryOp Expression Expression |
     AttributeRef Expression String |

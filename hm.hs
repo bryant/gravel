@@ -11,7 +11,7 @@ class Types a where
 data Type
     = IntType
     | BoolType
-    | FuncType [Type] Type
+    | FuncType Type Type
     | TypeVar TVarID
     deriving Show
 
@@ -28,12 +28,11 @@ instance Types a => Types [a] where
     apply cs = map $ apply cs
 
 instance Types Type where
-    freeVar (FuncType args ret) = foldl Set.union Set.empty $ map freeVar ts
-        where ts = ret : args
+    freeVar (FuncType arg ret) = freeVar arg `Set.union` freeVar ret
     freeVar (TypeVar tid) = Set.singleton tid
     freeVar _ = Set.empty
 
-    apply cs (FuncType args ret) = FuncType (apply cs args) (apply cs ret)
+    apply cs (FuncType arg ret) = FuncType (apply cs arg) (apply cs ret)
     apply cs (TypeVar tid) = case M.lookup tid cs of
         Nothing -> TypeVar tid
         Just t -> t
@@ -44,3 +43,20 @@ instance Types PolyType where
 
     apply cs (PolyType bnds t) = PolyType bnds $ apply filtered t
         where filtered = foldl (flip M.delete) cs bnds
+
+mgu :: Type -> Type -> Constraint
+mgu (FuncType a r) (FuncType a' r') = compose constraint constraint2
+    where
+    constraint = mgu a a'
+    constraint2 = mgu (apply constraint r) (apply constraint r')
+mgu (TypeVar n) t = M.singleton n t
+mgu t (TypeVar n) = mgu (TypeVar n) t
+mgu IntType IntType = M.empty
+mgu BoolType BoolType = M.empty
+mgu a b = error $ "unifiable " ++ show a ++ " -/- " ++ show b
+
+main = do
+    print $ mgu (TypeVar "a") (IntType)
+    print $ mgu (TypeVar "b") (FuncType IntType IntType)
+    print $ mgu (FuncType (TypeVar "c") (TypeVar "d")) (FuncType IntType IntType)
+    print $ mgu (FuncType (TypeVar "e") BoolType) (FuncType BoolType IntType)

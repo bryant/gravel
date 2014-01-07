@@ -106,8 +106,15 @@ infer env (FuncCall p arg) = do
     let subst2 = mgu (apply subst1 ty0) (FuncType ty1 b)
     return (foldr compose subst0 [subst2, subst1], apply subst2 b)
 
-main = do
-    print $ mgu (TypeVar "a") (IntType)
-    print $ mgu (TypeVar "b") (FuncType IntType IntType)
-    print $ mgu (FuncType (TypeVar "c") (TypeVar "d")) (FuncType IntType IntType)
-    print $ mgu (FuncType (TypeVar "e") BoolType) (FuncType BoolType IntType)
+testmgu =
+    forM cases $ \(a, b) -> putStrLn $ "mgu test: " ++ show (mgu a b)
+    where
+    cases =
+        [
+          (TypeVar "a", IntType)
+        , (TypeVar "b", FuncType IntType IntType)
+        , (FuncType (TypeVar "c") (TypeVar "d"), FuncType IntType IntType)
+        , (FuncType (TypeVar "e") BoolType, FuncType BoolType IntType)
+        ]
+
+main = testmgu

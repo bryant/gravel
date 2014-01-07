@@ -25,6 +25,8 @@ data Type
 
 data PolyType = PolyType [TVarID] Type deriving Show
 
+monoType = PolyType []
+
 type Substitution = M.Map TVarID Type
 
 compose :: Substitution -> Substitution -> Substitution
@@ -106,6 +108,8 @@ infer env (FuncCall p arg) = do
     let subst2 = mgu (apply subst1 ty0) (FuncType ty1 b)
     return (foldr compose subst0 [subst2, subst1], apply subst2 b)
 
+runTypeInf env = flip runState 0 . infer env
+
 testmgu =
     forM cases $ \(a, b) -> putStrLn $ "mgu test: " ++ show (mgu a b)
     where
@@ -117,4 +121,16 @@ testmgu =
         , (FuncType (TypeVar "e") BoolType, FuncType BoolType IntType)
         ]
 
-main = testmgu
+testInference = do
+    let ((_, impType), _) = runTypeInf (InfEnv env) impossible
+    print impType
+    let env' = M.insert "impossible" (monoType impType) env
+    let ((_, addType), _) = runTypeInf (InfEnv env') call_add
+    print addType
+    where
+    add_one = monoType $ FuncType IntType IntType
+    call_add = FuncDecl "x" $ FuncCall (Var "x") (Var "add_one")
+    env = M.fromList [("add_one", add_one)]
+    impossible = BoolLit False
+
+main = testInference >> testmgu

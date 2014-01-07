@@ -53,7 +53,7 @@ mgu (TypeVar n) t = M.singleton n t
 mgu t (TypeVar n) = mgu (TypeVar n) t
 mgu IntType IntType = M.empty
 mgu BoolType BoolType = M.empty
-mgu a b = error $ "unifiable " ++ show a ++ " -/- " ++ show b
+mgu a b = error $ "non-unifiable " ++ show a ++ " -/- " ++ show b
 
 main = do
     print $ mgu (TypeVar "a") (IntType)

@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import Control.Monad.State (State, get, modify, runState)
@@ -32,15 +34,15 @@ type Substitution = M.Map TVarID Type
 compose :: Substitution -> Substitution -> Substitution
 compose c2 c = c2 `M.union` M.map (apply c2) c
 
-data InfEnv = InfEnv (M.Map String PolyType)
+type InfEnv = M.Map String PolyType
 
 instance Types a => Types [a] where
     freeVar = foldl Set.union Set.empty . map freeVar
     apply cs = map $ apply cs
 
 instance Types InfEnv where
-    freeVar (InfEnv m) = freeVar $ M.elems m
-    apply cs (InfEnv m) = InfEnv . flip M.map m $ apply cs
+    freeVar = freeVar . M.elems
+    apply cs = M.map $ apply cs
 
 instance Types Type where
     freeVar (FuncType arg ret) = freeVar arg `Set.union` freeVar ret
@@ -91,14 +93,14 @@ generalize env t = PolyType bnds t
 infer :: InfEnv -> Expression -> Inf (Substitution, Type)
 infer _ (BoolLit _) = return (M.empty, BoolType)
 infer _ (IntLit _) = return (M.empty, IntType)
-infer (InfEnv m) (Var v) = case M.lookup v m of
+infer env (Var v) = case M.lookup v env of
     Nothing -> return . error $ "Unknown variable reference " ++ show v
     Just t -> instantiate t >>= (return . (,) M.empty)
 
-infer (InfEnv m) (FuncDecl f ret) = do
+infer env (FuncDecl f ret) = do
     binder <- newTypeVar
-    let m' = M.insert f (PolyType [] binder) $ M.delete f m
-    (subst, ty) <- infer (InfEnv m') ret
+    let m' = M.insert f (PolyType [] binder) $ M.delete f env
+    (subst, ty) <- infer m' ret
     return (subst, FuncType (apply subst binder) ty)
 
 infer env (FuncCall p arg) = do
@@ -122,10 +124,10 @@ testmgu =
         ]
 
 testInference = do
-    let ((_, impType), _) = runTypeInf (InfEnv env) impossible
+    let ((_, impType), _) = runTypeInf env impossible
     print impType
     let env' = M.insert "impossible" (monoType impType) env
-    let ((_, addType), _) = runTypeInf (InfEnv env') call_add
+    let ((_, addType), _) = runTypeInf env' call_add
     print addType
     where
     add_one = monoType $ FuncType IntType IntType

@@ -1,6 +1,7 @@
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import Control.Monad.State (State, get, modify, runState)
+import Control.Monad (forM)
 
 type TVarID = String
 
@@ -22,10 +23,15 @@ type Substitution = M.Map TVarID Type
 compose :: Substitution -> Substitution -> Substitution
 compose c2 c = c2 `M.union` M.map (apply c2) c
 
+data InfEnv = InfEnv (M.Map String PolyType)
+
 instance Types a => Types [a] where
     freeVar = foldl Set.union Set.empty . map freeVar
-
     apply cs = map $ apply cs
+
+instance Types InfEnv where
+    freeVar (InfEnv m) = freeVar $ M.elems m
+    apply cs (InfEnv m) = InfEnv . flip M.map m $ apply cs
 
 instance Types Type where
     freeVar (FuncType arg ret) = freeVar arg `Set.union` freeVar ret
@@ -54,6 +60,24 @@ mgu t (TypeVar n) = mgu (TypeVar n) t
 mgu IntType IntType = M.empty
 mgu BoolType BoolType = M.empty
 mgu a b = error $ "non-unifiable " ++ show a ++ " -/- " ++ show b
+
+data InfState = InfState { idgen :: Int }
+type Inf = State Int
+
+newTypeVar :: Inf Type
+newTypeVar = do
+    tid <- get
+    modify (+1)
+    return . TypeVar $ "a" ++ show tid
+
+instantiate :: PolyType -> Inf Type
+instantiate (PolyType bnds t) = do
+    fresh <- forM bnds $ const newTypeVar
+    return $ apply (M.fromList $ zip bnds fresh) t
+
+generalize :: InfEnv -> Type -> PolyType
+generalize env t = PolyType bnds t
+    where bnds = Set.toList $ freeVar t `Set.difference` freeVar env
 
 main = do
     print $ mgu (TypeVar "a") (IntType)

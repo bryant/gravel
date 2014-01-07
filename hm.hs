@@ -6,7 +6,7 @@ type TVarID = String
 
 class Types a where
     freeVar :: a -> Set.Set TVarID
-    apply :: Constraint -> a -> a
+    apply :: Substitution -> a -> a
 
 data Type
     = IntType
@@ -17,9 +17,9 @@ data Type
 
 data PolyType = PolyType [TVarID] Type deriving Show
 
-type Constraint = M.Map TVarID Type
+type Substitution = M.Map TVarID Type
 
-compose :: Constraint -> Constraint -> Constraint
+compose :: Substitution -> Substitution -> Substitution
 compose c2 c = c2 `M.union` M.map (apply c2) c
 
 instance Types a => Types [a] where
@@ -44,7 +44,7 @@ instance Types PolyType where
     apply cs (PolyType bnds t) = PolyType bnds $ apply filtered t
         where filtered = foldl (flip M.delete) cs bnds
 
-mgu :: Type -> Type -> Constraint
+mgu :: Type -> Type -> Substitution
 mgu (FuncType a r) (FuncType a' r') = compose constraint constraint2
     where
     constraint = mgu a a'

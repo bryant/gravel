@@ -3,6 +3,13 @@ import qualified Data.Set as Set
 import Control.Monad.State (State, get, modify, runState)
 import Control.Monad (forM)
 
+data Expression
+    = Var String
+    | BoolLit Bool
+    | IntLit Int
+    | FuncDecl String Expression
+    | FuncCall Expression Expression
+
 type TVarID = String
 
 class Types a where
@@ -78,6 +85,26 @@ instantiate (PolyType bnds t) = do
 generalize :: InfEnv -> Type -> PolyType
 generalize env t = PolyType bnds t
     where bnds = Set.toList $ freeVar t `Set.difference` freeVar env
+
+infer :: InfEnv -> Expression -> Inf (Substitution, Type)
+infer _ (BoolLit _) = return (M.empty, BoolType)
+infer _ (IntLit _) = return (M.empty, IntType)
+infer (InfEnv m) (Var v) = case M.lookup v m of
+    Nothing -> return . error $ "Unknown variable reference " ++ show v
+    Just t -> instantiate t >>= (return . (,) M.empty)
+
+infer (InfEnv m) (FuncDecl f ret) = do
+    binder <- newTypeVar
+    let m' = M.insert f (PolyType [] binder) $ M.delete f m
+    (subst, ty) <- infer (InfEnv m') ret
+    return (subst, FuncType (apply subst binder) ty)
+
+infer env (FuncCall p arg) = do
+    (subst0, ty0) <- infer env p
+    (subst1, ty1) <- infer (apply subst0 env) arg
+    b <- newTypeVar
+    let subst2 = mgu (apply subst1 ty0) (FuncType ty1 b)
+    return (foldr compose subst0 [subst2, subst1], apply subst2 b)
 
 main = do
     print $ mgu (TypeVar "a") (IntType)

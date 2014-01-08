@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
-import qualified Data.Map as M
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad.State (State, get, modify, runState)
 import Control.Monad (forM)
@@ -29,20 +29,20 @@ data PolyType = PolyType [TVarID] Type deriving Show
 
 monoType = PolyType []
 
-type Substitution = M.Map TVarID Type
+type Substitution = Map.Map TVarID Type
 
 compose :: Substitution -> Substitution -> Substitution
-compose c2 c = c2 `M.union` M.map (apply c2) c
+compose c2 c = c2 `Map.union` Map.map (apply c2) c
 
-type InfEnv = M.Map String PolyType
+type InfEnv = Map.Map String PolyType
 
 instance Types a => Types [a] where
     freeVar = foldl Set.union Set.empty . map freeVar
     apply cs = map $ apply cs
 
 instance Types InfEnv where
-    freeVar = freeVar . M.elems
-    apply cs = M.map $ apply cs
+    freeVar = freeVar . Map.elems
+    apply cs = Map.map $ apply cs
 
 instance Types Type where
     freeVar (FuncType arg ret) = freeVar arg `Set.union` freeVar ret
@@ -50,7 +50,7 @@ instance Types Type where
     freeVar _ = Set.empty
 
     apply cs (FuncType arg ret) = FuncType (apply cs arg) (apply cs ret)
-    apply cs (TypeVar tid) = case M.lookup tid cs of
+    apply cs (TypeVar tid) = case Map.lookup tid cs of
         Nothing -> TypeVar tid
         Just t -> t
     apply _ fixedtype = fixedtype
@@ -59,17 +59,17 @@ instance Types PolyType where
     freeVar (PolyType bnds t) = freeVar t `Set.difference` Set.fromList bnds
 
     apply cs (PolyType bnds t) = PolyType bnds $ apply filtered t
-        where filtered = foldl (flip M.delete) cs bnds
+        where filtered = foldl (flip Map.delete) cs bnds
 
 mgu :: Type -> Type -> Substitution
 mgu (FuncType a r) (FuncType a' r') = compose constraint constraint2
     where
     constraint = mgu a a'
     constraint2 = mgu (apply constraint r) (apply constraint r')
-mgu (TypeVar n) t = M.singleton n t
+mgu (TypeVar n) t = Map.singleton n t
 mgu t (TypeVar n) = mgu (TypeVar n) t
-mgu IntType IntType = M.empty
-mgu BoolType BoolType = M.empty
+mgu IntType IntType = Map.empty
+mgu BoolType BoolType = Map.empty
 mgu a b = error $ "non-unifiable " ++ show a ++ " -/- " ++ show b
 
 data InfState = InfState { idgen :: Int }
@@ -84,22 +84,22 @@ newTypeVar = do
 instantiate :: PolyType -> Inf Type
 instantiate (PolyType bnds t) = do
     fresh <- forM bnds $ const newTypeVar
-    return $ apply (M.fromList $ zip bnds fresh) t
+    return $ apply (Map.fromList $ zip bnds fresh) t
 
 generalize :: InfEnv -> Type -> PolyType
 generalize env t = PolyType bnds t
     where bnds = Set.toList $ freeVar t `Set.difference` freeVar env
 
 infer :: InfEnv -> Expression -> Inf (Substitution, Type)
-infer _ (BoolLit _) = return (M.empty, BoolType)
-infer _ (IntLit _) = return (M.empty, IntType)
-infer env (Var v) = case M.lookup v env of
+infer _ (BoolLit _) = return (Map.empty, BoolType)
+infer _ (IntLit _) = return (Map.empty, IntType)
+infer env (Var v) = case Map.lookup v env of
     Nothing -> return . error $ "Unknown variable reference " ++ show v
-    Just t -> instantiate t >>= (return . (,) M.empty)
+    Just t -> instantiate t >>= (return . (,) Map.empty)
 
 infer env (FuncDecl f ret) = do
     binder <- newTypeVar
-    let m' = M.insert f (PolyType [] binder) $ M.delete f env
+    let m' = Map.insert f (PolyType [] binder) $ Map.delete f env
     (subst, ty) <- infer m' ret
     return (subst, FuncType (apply subst binder) ty)
 

@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad.State (State, get, modify, runState)
@@ -126,13 +127,13 @@ testmgu =
 testInference = do
     let ((_, impType), _) = runTypeInf env impossible
     print impType
-    let env' = M.insert "impossible" (monoType impType) env
+    let env' = Map.insert "impossible" (monoType impType) env
     let ((_, addType), _) = runTypeInf env' call_add
     print addType
     where
     add_one = monoType $ FuncType IntType IntType
     call_add = FuncDecl "x" $ FuncCall (Var "x") (Var "add_one")
-    env = M.fromList [("add_one", add_one)]
+    env = Map.fromList [("add_one", add_one)]
     impossible = BoolLit False
 
 main = testInference >> testmgu
